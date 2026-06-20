@@ -1,0 +1,1 @@
+In here it has json output that created with batfish analysis process also thi directory has csv output too

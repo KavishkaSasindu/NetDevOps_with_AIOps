@@ -14,7 +14,7 @@ print(f"tag is {tag}")
 bf = Session(host="172.23.71.245", port=9996)
 
 # This points to the parent folder holding all your generated snapshots
-BASE_DIR = "net-devops-ai-repo/containerlab/bf_snapshot/"
+BASE_DIR = "containerlab/bf_snapshot/"
 
 # Find all directories inside BASE_DIR
 snapshots = [
@@ -123,8 +123,8 @@ else:
 # 6. EXPORT FOR ML DATASET
 # -----------------------------
 # Ensure the export directories exist
-os.makedirs("net-devops-ai-repo/network_risk_dataset_snap/csv", exist_ok=True)
-os.makedirs("net-devops-ai-repo/network_risk_dataset_snap/json", exist_ok=True)
+os.makedirs("network_risk_dataset_snap/csv", exist_ok=True)
+os.makedirs("network_risk_dataset_snap/json", exist_ok=True)
 
 csv_path = f"net-devops-ai-repo/network_risk_dataset_snap/csv/network_risk_dataset_{tag}.csv"
 df_export = pd.DataFrame([output])
@@ -133,7 +133,7 @@ print(f"\n💾 Saved CSV -> {csv_path}")
 
 #Append data to ml_dataset
 # Append to master ML dataset
-master_csv = "net-devops-ai-repo/network_risk_dataset_snap/batfish_ml_dataset.csv"
+master_csv = "network_risk_dataset_snap/batfish_ml_dataset.csv"
 
 if os.path.exists(master_csv):
     # Append without header
@@ -144,7 +144,7 @@ else:
 
 print(f"📈 Appended data to -> {master_csv}")
 
-json_path = f"net-devops-ai-repo/network_risk_dataset_snap/json/risk_{tag}.json"
+json_path = f"network_risk_dataset_snap/json/risk_{tag}.json"
 with open(json_path, "w") as f:
     json.dump(output, f, indent=2)
 print(f"💾 Saved JSON -> {json_path}")

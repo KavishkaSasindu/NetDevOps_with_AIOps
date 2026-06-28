@@ -121,17 +121,17 @@ else:
 # 6. EXPORT FOR ML DATASET
 # -----------------------------
 # Ensure the export directories exist
-os.makedirs("../network_risk_dataset_snap/csv", exist_ok=True)
-os.makedirs("../network_risk_dataset_snap/json", exist_ok=True)
+os.makedirs("net-devops-ai-repo/network_risk_dataset_snap/csv", exist_ok=True)
+os.makedirs("net-devops-ai-repo/network_risk_dataset_snap/json", exist_ok=True)
 
-csv_path = f"../network_risk_dataset_snap/csv/network_risk_dataset_{tag}.csv"
+csv_path = f"net-devops-ai-repo/network_risk_dataset_snap/csv/network_risk_dataset_{tag}.csv"
 df_export = pd.DataFrame([output])
 df_export.to_csv(csv_path, index=False)
 print(f"\n💾 Saved CSV -> {csv_path}")
 
 #Append data to ml_dataset
 # Append to master ML dataset
-master_csv = "../network_risk_dataset_snap/batfish_ml_dataset.csv"
+master_csv = "net-devops-ai-repo/network_risk_dataset_snap/batfish_ml_dataset.csv"
 
 if os.path.exists(master_csv):
     # Append without header

@@ -1,11 +1,11 @@
 #!/bin/bash
 
-OUT_DIR="configs"
+OUT_DIR="../configs"
 mkdir -p $OUT_DIR
 
 echo "🚀 Auto-detecting router containers..."
 
-CONTAINERS=$(docker ps --format "{{.Names}}" | grep "^r")
+CONTAINERS=$(docker ps --format "{{.Names}}" | grep "r[1-3]$")
 
 for router in $CONTAINERS
 do

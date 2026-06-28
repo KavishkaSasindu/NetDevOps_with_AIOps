@@ -142,7 +142,7 @@ else:
 
 print(f"📈 Appended data to -> {master_csv}")
 
-json_path = f"../network_risk_dataset_snap/json/risk_{tag}.json"
+json_path = f"net-devops-ai-repo/network_risk_dataset_snap/json/risk_{tag}.json"
 with open(json_path, "w") as f:
     json.dump(output, f, indent=2)
 print(f"💾 Saved JSON -> {json_path}")

@@ -129,6 +129,19 @@ df_export = pd.DataFrame([output])
 df_export.to_csv(csv_path, index=False)
 print(f"\n💾 Saved CSV -> {csv_path}")
 
+#Append data to ml_dataset
+# Append to master ML dataset
+master_csv = "../network_risk_dataset_snap/batfish_ml_dataset.csv"
+
+if os.path.exists(master_csv):
+    # Append without header
+    df_export.to_csv(master_csv, mode="a", header=False, index=False)
+else:
+    # Create file with header
+    df_export.to_csv(master_csv, mode="w", header=True, index=False)
+
+print(f"📈 Appended data to -> {master_csv}")
+
 json_path = f"../network_risk_dataset_snap/json/risk_{tag}.json"
 with open(json_path, "w") as f:
     json.dump(output, f, indent=2)

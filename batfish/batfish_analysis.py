@@ -4,7 +4,9 @@ import pandas as pd
 import json
 import os
 
+
 tag = datetime.now().strftime("%Y%m%d_%H%M%S")
+print(f"tag is {tag}")
 
 # -----------------------------
 # 1. Connect to Batfish

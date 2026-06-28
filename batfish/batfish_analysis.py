@@ -9,7 +9,7 @@ tag = datetime.now().strftime("%Y%m%d_%H%M%S")
 # -----------------------------
 # 1. Connect to Batfish
 # -----------------------------
-bf = Session(host="localhost", port=9996)
+bf = Session(host="host.docker.internal", port=9996)
 
 # This points to the parent folder holding all your generated snapshots
 BASE_DIR = "../containerlab/bf_snapshot/"

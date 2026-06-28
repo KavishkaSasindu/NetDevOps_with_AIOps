@@ -1,6 +1,6 @@
 from pybatfish.client.session import Session
 
-bf = Session(host="host.docker.internal")
+bf = Session(host="172.23.71.245",port="9996")
 
 try:
     bf.list_networks()

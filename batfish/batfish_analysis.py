@@ -123,8 +123,8 @@ else:
 # 6. EXPORT FOR ML DATASET
 # -----------------------------
 # Ensure the export directories exist
-os.makedirs("network_risk_dataset_snap/csv", exist_ok=True)
-os.makedirs("network_risk_dataset_snap/json", exist_ok=True)
+os.makedirs("../network_risk_dataset_snap/csv", exist_ok=True)
+os.makedirs("../network_risk_dataset_snap/json", exist_ok=True)
 
 csv_path = f"net-devops-ai-repo/network_risk_dataset_snap/csv/network_risk_dataset_{tag}.csv"
 df_export = pd.DataFrame([output])

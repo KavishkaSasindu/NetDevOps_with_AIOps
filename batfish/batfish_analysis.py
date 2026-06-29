@@ -13,8 +13,19 @@ print(f"tag is {tag}")
 # -----------------------------
 bf = Session(host="172.23.71.245", port=9996)
 
-# This points to the parent folder holding all your generated snapshots
-BASE_DIR = "../containerlab/bf_snapshot/"
+# Dynamically find the absolute path to the repository root
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+BASE_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, "..", "containerlab", "bf_snapshot"))
+
+print(f"🔍 Searching for snapshots in absolute path: {BASE_DIR}")
+
+# Debugging: If it still fails, print what ACTUALLY exists in the repo root
+if not os.path.exists(BASE_DIR):
+    repo_root = os.path.abspath(os.path.join(SCRIPT_DIR, ".."))
+    print(f"❌ CRITICAL: Directory {BASE_DIR} does not exist!")
+    print(f"📁 Contents of the repository root ({repo_root}):")
+    print(os.listdir(repo_root))
+    exit(1)
 
 # Find all directories inside BASE_DIR
 snapshots = [
@@ -22,7 +33,6 @@ snapshots = [
     for d in os.listdir(BASE_DIR)
     if os.path.isdir(os.path.join(BASE_DIR, d))
 ]
-
 if not snapshots:
     print(f"❌ No snapshots found in {BASE_DIR}")
     exit(1)

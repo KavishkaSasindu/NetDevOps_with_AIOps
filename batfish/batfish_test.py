@@ -7,5 +7,6 @@ try:
     print("Hey from Batfish")
     print("✔ Batfish reachable")
 except Exception as e:
+    # Error Logging
     print("✖ Batfish not reachable")
     print(e)

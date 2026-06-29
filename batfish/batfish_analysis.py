@@ -123,17 +123,20 @@ else:
 # 6. EXPORT FOR ML DATASET
 # -----------------------------
 # Ensure the export directories exist
-os.makedirs("../network_risk_dataset_snap/csv", exist_ok=True)
-os.makedirs("../network_risk_dataset_snap/json", exist_ok=True)
 
-csv_path = f"net-devops-ai-repo/network_risk_dataset_snap/csv/network_risk_dataset_{tag}.csv"
+OUTPUT_DIR="../../batfish_results"
+
+os.makedirs(f"{OUTPUT_DIR}/csv", exist_ok=True)
+os.makedirs(f"{OUTPUT_DIR}/json", exist_ok=True)
+
+csv_path = f"{OUTPUT_DIR}/csv/network_risk_dataset_{tag}.csv"
 df_export = pd.DataFrame([output])
 df_export.to_csv(csv_path, index=False)
 print(f"\n💾 Saved CSV -> {csv_path}")
 
 #Append data to ml_dataset
 # Append to master ML dataset
-master_csv = "network_risk_dataset_snap/batfish_ml_dataset.csv"
+master_csv = f"{OUTPUT_DIR}/batfish_ml_dataset.csv"
 
 if os.path.exists(master_csv):
     # Append without header
@@ -144,7 +147,7 @@ else:
 
 print(f"📈 Appended data to -> {master_csv}")
 
-json_path = f"network_risk_dataset_snap/json/risk_{tag}.json"
+json_path = f"{OUTPUT_DIR}/json/risk_{tag}.json"
 with open(json_path, "w") as f:
     json.dump(output, f, indent=2)
 print(f"💾 Saved JSON -> {json_path}")

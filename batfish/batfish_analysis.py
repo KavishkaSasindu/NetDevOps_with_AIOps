@@ -14,7 +14,7 @@ print(f"tag is {tag}")
 bf = Session(host="172.23.71.245", port=9996)
 
 # This points to the parent folder holding all your generated snapshots
-BASE_DIR = "containerlab/bf_snapshot/"
+BASE_DIR = "../containerlab/bf_snapshot/"
 
 # Find all directories inside BASE_DIR
 snapshots = [

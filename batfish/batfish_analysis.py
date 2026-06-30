@@ -15,8 +15,7 @@ bf = Session(host="172.23.71.245", port=9996)
 
 # Dynamically find the absolute path to the repository root
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-BASE_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, "..", "containerlab", "bf_snapshot"))
-
+BASE_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, "..", "..", "bf_snapshot"))
 print(f"🔍 Searching for snapshots in absolute path: {BASE_DIR}")
 
 # Debugging: If it still fails, print what ACTUALLY exists in the repo root
@@ -134,7 +133,7 @@ else:
 # -----------------------------
 # Ensure the export directories exist
 
-OUTPUT_DIR="../../batfish_results"
+OUTPUT_DIR=os.environ.get("BATFISH_RESULTS_DIR", os.path.abspath(os.path.join(SCRIPT_DIR, "..", "..", "batfish_results")))
 
 os.makedirs(f"{OUTPUT_DIR}/csv", exist_ok=True)
 os.makedirs(f"{OUTPUT_DIR}/json", exist_ok=True)

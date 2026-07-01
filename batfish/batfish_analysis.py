@@ -60,13 +60,22 @@ print("\nRunning Batfish Queries...")
 # Reachability Query
 reach = pd.DataFrame()
 try:
-    reach = bf.q.reachability(
-        pathConstraints=PathConstraints(startLocation="h1", endLocation="h3"),
+    reach_answer = bf.q.reachability(
+        # Changed h1 and h3 to r1 and r3
+        pathConstraints=PathConstraints(startLocation="r1", endLocation="r3"),
         headers=HeaderConstraints(dstIps="192.168.1.0/24,192.168.2.0/24,192.168.3.0/24")
-    ).answer().frame()
-except Exception as e:
-    print(f"⚠️ Reachability analysis failed or skipped: {e}")
+    ).answer()
+    
+    # Safely check if it has a frame (meaning it didn't return a server error)
+    if hasattr(reach_answer, 'frame'):
+        reach = reach_answer.frame()
+    else:
+        print("⚠️ Reachability query failed on the server (check node names).")
+        reach = pd.DataFrame()
 
+except Exception as e:
+    print(f"⚠️ Reachability script error: {e}")
+    reach = pd.DataFrame()
 # OSPF and Routes Queries
 try:
     ospf_neighbors = bf.q.ospfSessionCompatibility().answer().frame()
@@ -93,9 +102,9 @@ static_failures = pd.DataFrame()
 if not reach.empty and "Traces" in reach.columns:
     traces = reach["Traces"].astype(str).str.upper()
     
-    unreachable_routes = reach[traces.str.contains("DROP|DENY|NO_ROUTE", regex=True)]
+    unreachable_routes = reach[traces.str.contains("DROP|DENY|NULL_ROUTED|NO_ROUTE", regex=True)]
     loops = reach[traces.str.contains("LOOP")]
-    blackholes = reach[traces.str.contains("BLACKHOLE|NULL_ROUTED")]
+    blackholes = reach[traces.str.contains("BLACKHOLE")]
 
 # Process OSPF Failures
 if not ospf_neighbors.empty and "Session_Status" in ospf_neighbors.columns:
@@ -130,10 +139,11 @@ else:
 # -----------------------------
 output = {
     "unreachable_routes": len(unreachable_routes),
+    "static_failures": len(static_failures),
     "loops": len(loops),
     "blackholes": len(blackholes),
     "ospf_failures": len(ospf_failures),
-    "static_routes": len(static_failures),  
+    "static_routes": len(static_routes),  
     "risk_score": risk_score,
     "risk_level": risk_level
 }

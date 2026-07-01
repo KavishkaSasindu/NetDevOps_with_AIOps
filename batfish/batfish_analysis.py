@@ -118,7 +118,7 @@ if not reach.empty and "Traces" in reach.columns:
 
     unreachable_routes = reach[
         traces.str.contains(
-            "DROP|DENY|NULL_ROUTED|NO_ROUTE"
+            "DROP|DENY|NO_ROUTE"
         )
     ]
 
@@ -129,7 +129,7 @@ if not reach.empty and "Traces" in reach.columns:
     ]
     blackholes = reach[
         traces.str.contains(
-            "BLACKHOLE"
+            "BLACKHOLE | NULL_ROUTED"
         )
     ]
 

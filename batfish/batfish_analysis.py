@@ -68,23 +68,20 @@ else:
 
 print("Running Batfish Queries...")
 
-# Test LAN reachability through static routes
+# Test LAN reachability 
 try:
     reach_answer = bf.q.reachability(
         pathConstraints=PathConstraints(
-            startLocation="h1",
+            startLocation="h1", endLocation="h3"
         ),
         headers=HeaderConstraints(
             dstIps="192.168.1.0/24,192.168.2.0/24,192.168.3.0/24"
         )
-    ).answer()
-    reach = reach_answer.frame()
+    ).answer().frame()
 
 
 except Exception as e:
-    print(
-        f"⚠️ Reachability skipped: {e}"
-    )
+    print(f"⚠️ Reachability skipped: {e}")
     reach = pd.DataFrame()
 
 ospf_neighbors = (
@@ -121,7 +118,7 @@ if not reach.empty and "Traces" in reach.columns:
 
     unreachable_routes = reach[
         traces.str.contains(
-            "DROP|DENY|NO_ROUTE"
+            "DROP|DENY|NULL_ROUTED|NO_ROUTE"
         )
     ]
 
@@ -132,7 +129,7 @@ if not reach.empty and "Traces" in reach.columns:
     ]
     blackholes = reach[
         traces.str.contains(
-            "BLACKHOLE|NULL_ROUTED"
+            "BLACKHOLE"
         )
     ]
 

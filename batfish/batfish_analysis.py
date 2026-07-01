@@ -75,7 +75,7 @@ try:
             startLocation="h1",
         ),
         headers=HeaderConstraints(
-            dstIps="192.168.1.0/24, 192.168.2.0/24, 192.168.3.0/24"
+            dstIps="192.168.1.0/24,192.168.2.0/24,192.168.3.0/24"
         )
     ).answer()
     reach = reach_answer.frame()
@@ -132,7 +132,7 @@ if not reach.empty and "Traces" in reach.columns:
     ]
     blackholes = reach[
         traces.str.contains(
-            "BLACKHOLE | NULL_ROUTED"
+            "BLACKHOLE|NULL_ROUTED"
         )
     ]
 

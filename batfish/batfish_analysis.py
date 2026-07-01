@@ -93,9 +93,9 @@ static_failures = pd.DataFrame()
 if not reach.empty and "Traces" in reach.columns:
     traces = reach["Traces"].astype(str).str.upper()
     
-    unreachable_routes = reach[traces.str.contains("DROP|DENY|NULL_ROUTED|NO_ROUTE", regex=True)]
+    unreachable_routes = reach[traces.str.contains("DROP|DENY|NO_ROUTE", regex=True)]
     loops = reach[traces.str.contains("LOOP")]
-    blackholes = reach[traces.str.contains("BLACKHOLE")]
+    blackholes = reach[traces.str.contains("BLACKHOLE|NULL_ROUTED")]
 
 # Process OSPF Failures
 if not ospf_neighbors.empty and "Session_Status" in ospf_neighbors.columns:
@@ -130,11 +130,10 @@ else:
 # -----------------------------
 output = {
     "unreachable_routes": len(unreachable_routes),
-    "static_failures": len(static_failures),
     "loops": len(loops),
     "blackholes": len(blackholes),
     "ospf_failures": len(ospf_failures),
-    "static_routes": len(static_routes),  
+    "static_routes": len(static_failures),  
     "risk_score": risk_score,
     "risk_level": risk_level
 }

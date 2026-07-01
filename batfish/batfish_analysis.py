@@ -1,4 +1,5 @@
 from pybatfish.client.session import Session
+from pybatfish.datamodel import PathConstraints
 from datetime import datetime
 import pandas as pd
 import json
@@ -16,6 +17,7 @@ bf = Session(host="172.23.71.245", port=9996)
 # Dynamically find the absolute path to the repository root
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 BASE_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, "..", "..", "bf_snapshot"))
+# BASE_DIR = "../containerlab/bf_snapshot"  # Relative path to the snapshot directory
 print(f"🔍 Searching for snapshots in absolute path: {BASE_DIR}")
 
 # Debugging: If it still fails, print what ACTUALLY exists in the repo root
@@ -60,7 +62,10 @@ else:
 print("Running Batfish Queries...")
 
 try:
-    reach_answer = bf.q.reachability().answer()
+    reach_answer = bf.q.reachability(
+        pathConstraints=PathConstraints(startLocation="r1", endLocation="r3")
+    ).answer()
+    
     # Check if the answer actually contains tabular data (a frame)
     reach = reach_answer.frame() if hasattr(reach_answer, 'frame') else pd.DataFrame()
 except Exception as e:
@@ -76,19 +81,32 @@ print(ospf_neighbors)
 # -----------------------------
 # 3. METRICS COLLECTION
 # -----------------------------
-unreachable_routes = reach[reach["Action"] == "FAILURE"] if "Action" in reach.columns else []
-loops = reach[reach["Action"].str.contains("LOOP", na=False)] if "Action" in reach.columns else []
-blackholes = reach[reach["Action"].str.contains("BLACKHOLE", na=False)] if "Action" in reach.columns else []
+# unreachable_routes = reach[reach["Action"] == "FAILURE"] if "Action" in reach.columns else []
+# loops = reach[reach["Action"].str.contains("LOOP", na=False)] if "Action" in reach.columns else []
+# blackholes = reach[reach["Action"].str.contains("BLACKHOLE", na=False)] if "Action" in reach.columns else []
+
+unreachable_routes = []
+loops = []
+blackholes = []
+
+if not reach.empty and "Traces" in reach.columns:
+    # Convert Traces to string to easily search for disposition keywords
+    traces_str = reach["Traces"].astype(str).str.upper()
+    
+    # If a trace says DROPPED, EXITS_NETWORK, or NEIGHBOR_UNREACHABLE, it failed.
+    unreachable_routes = reach[traces_str.str.contains("DROP|DENY|NULL_ROUTED")]
+    loops = reach[traces_str.str.contains("LOOP")]
+    blackholes = reach[traces_str.str.contains("BLACKHOLE")]
 
 ospf_failures = []
 ospf_failures = pd.DataFrame()
 if "Session_Status" in ospf_neighbors.columns:
     ospf_failures = ospf_neighbors[ospf_neighbors["Session_Status"] != "ESTABLISHED"]
 
-static_routes = routes[routes.get("Protocol", "").astype(str).str.upper() == "STATIC"] if "Protocol" in routes.columns else []
+static_routes = routes[routes.get("Protocol", "").astype(str).str.upper() == "STATIC"] if "Protocol" in routes.columns else pd.DataFrame()
 
 # -----------------------------
-# 4. RISK MODEL (simple but CV-ready)
+# 4. RISK MODEL SCORE CALCULATION
 # -----------------------------
 risk_score = (
     len(unreachable_routes) * 3 +
@@ -98,8 +116,8 @@ risk_score = (
     len(static_routes) * 1
 )
 
-if risk_score <= 2:
-    risk_level = "LOW"
+if risk_score <= 0:
+    risk_level = "GOOD"
 elif risk_score <= 6:
     risk_level = "MEDIUM"
 else:

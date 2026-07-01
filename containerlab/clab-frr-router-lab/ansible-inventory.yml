@@ -7,9 +7,15 @@ all:
   children:
     linux:
       hosts:
-        clab-frr-router-lab-r1:
-          ansible_host: 172.20.20.3
-        clab-frr-router-lab-r2:
+        clab-frr-router-lab-h1:
+          ansible_host: 172.20.20.6
+        clab-frr-router-lab-h2:
           ansible_host: 172.20.20.2
-        clab-frr-router-lab-r3:
+        clab-frr-router-lab-h3:
           ansible_host: 172.20.20.4
+        clab-frr-router-lab-r1:
+          ansible_host: 172.20.20.7
+        clab-frr-router-lab-r2:
+          ansible_host: 172.20.20.3
+        clab-frr-router-lab-r3:
+          ansible_host: 172.20.20.5

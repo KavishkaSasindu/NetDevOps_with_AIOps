@@ -142,8 +142,7 @@ output = {
     "static_failures": len(static_failures),
     "loops": len(loops),
     "blackholes": len(blackholes),
-    "ospf_failures": len(ospf_failures),
-    "static_routes": len(static_routes),  
+    "ospf_failures": len(ospf_failures),  
     "risk_score": risk_score,
     "risk_level": risk_level
 }

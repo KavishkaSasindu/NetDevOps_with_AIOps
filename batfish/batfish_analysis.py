@@ -1,5 +1,5 @@
 from pybatfish.client.session import Session
-from pybatfish.datamodel import PathConstraints
+from pybatfish.datamodel import PathConstraints, HeaderConstraints
 from datetime import datetime
 import pandas as pd
 import json
@@ -12,111 +12,172 @@ print(f"tag is {tag}")
 # -----------------------------
 # 1. Connect to Batfish
 # -----------------------------
+
 bf = Session(host="172.23.71.245", port=9996)
 
-# Dynamically find the absolute path to the repository root
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-BASE_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, "..", "..", "bf_snapshot"))
-# BASE_DIR = "../containerlab/bf_snapshot"  # Relative path to the snapshot directory
+BASE_DIR = os.path.abspath(
+    os.path.join(SCRIPT_DIR, "..", "..", "bf_snapshot")
+)
+
 print(f"🔍 Searching for snapshots in absolute path: {BASE_DIR}")
 
-# Debugging: If it still fails, print what ACTUALLY exists in the repo root
 if not os.path.exists(BASE_DIR):
-    repo_root = os.path.abspath(os.path.join(SCRIPT_DIR, ".."))
-    print(f"❌ CRITICAL: Directory {BASE_DIR} does not exist!")
-    print(f"📁 Contents of the repository root ({repo_root}):")
-    print(os.listdir(repo_root))
+    print("Snapshot directory missing")
     exit(1)
 
-# Find all directories inside BASE_DIR
 snapshots = [
     os.path.join(BASE_DIR, d)
     for d in os.listdir(BASE_DIR)
     if os.path.isdir(os.path.join(BASE_DIR, d))
 ]
+
 if not snapshots:
-    print(f"❌ No snapshots found in {BASE_DIR}")
+    print("No snapshots found")
     exit(1)
 
-# Pick the latest snapshot dynamically by modified time
-latest_snapshot = max(snapshots, key=os.path.getmtime)
+latest_snapshot = max(
+    snapshots,
+    key=os.path.getmtime
+)
 
-# Batfish requires the ROOT snapshot folder (e.g., snap_20260617_162144)
+
 SNAPSHOT_DIR = latest_snapshot
-print(f"\n📂 Loading latest snapshot: {SNAPSHOT_DIR}")
 
-# Initialize the snapshot in PyBatfish
-bf.init_snapshot(SNAPSHOT_DIR, name="ospf_lab", overwrite=True)
+print(f"\n📂 Loading snapshot: {SNAPSHOT_DIR}")
+bf.init_snapshot(
+    SNAPSHOT_DIR,
+    name="ospf_lab",
+    overwrite=True
+)
 
-# Optional: Print parsing issues to ensure everything was read correctly
+# -----------------------------
+# Parse Check
+# -----------------------------
+
 parse_issues = bf.q.initIssues().answer().frame()
 if not parse_issues.empty:
-    print("\n⚠️ Parse Issues Detected:")
+    print("\n⚠️ Parse Issues:")
     print(parse_issues)
 else:
-    print("\n✅ Snapshot loaded cleanly with no parsing errors.")
+    print("\n✅ Snapshot clean")
 
 # -----------------------------
-# 2. RUN ANALYSIS QUERIES
+# 2. RUN ANALYSIS
 # -----------------------------
+
 print("Running Batfish Queries...")
 
+# Test LAN reachability through static routes
 try:
     reach_answer = bf.q.reachability(
-        pathConstraints=PathConstraints(startLocation="r1", endLocation="r3")
+        pathConstraints=PathConstraints(
+            startLocation="h1",
+            endLocation="h3"
+        ),
+        headers=HeaderConstraints(
+            dstIps="192.168.3.1"
+        )
     ).answer()
-    
-    # Check if the answer actually contains tabular data (a frame)
-    reach = reach_answer.frame() if hasattr(reach_answer, 'frame') else pd.DataFrame()
+    reach = reach_answer.frame()
+
+
 except Exception as e:
-    print(f"⚠️ Reachability query skipped: {e}")
+    print(
+        f"⚠️ Reachability skipped: {e}"
+    )
     reach = pd.DataFrame()
-ospf = bf.q.ospfProcessConfiguration().answer().frame()
-routes = bf.q.routes().answer().frame()
+
+ospf_neighbors = (
+    bf.q.ospfSessionCompatibility()
+    .answer()
+    .frame()
+)
+
+
+routes = (
+    bf.q.routes()
+    .answer()
+    .frame()
+)
 
 print("\n--- OSPF Neighbors ---")
-ospf_neighbors = bf.q.ospfSessionCompatibility().answer().frame()
+
 print(ospf_neighbors)
 
 # -----------------------------
-# 3. METRICS COLLECTION
+# 3. METRICS
 # -----------------------------
-# unreachable_routes = reach[reach["Action"] == "FAILURE"] if "Action" in reach.columns else []
-# loops = reach[reach["Action"].str.contains("LOOP", na=False)] if "Action" in reach.columns else []
-# blackholes = reach[reach["Action"].str.contains("BLACKHOLE", na=False)] if "Action" in reach.columns else []
 
-unreachable_routes = []
-loops = []
-blackholes = []
+unreachable_routes = pd.DataFrame()
+loops = pd.DataFrame()
+blackholes = pd.DataFrame()
+
 
 if not reach.empty and "Traces" in reach.columns:
-    # Convert Traces to string to easily search for disposition keywords
-    traces_str = reach["Traces"].astype(str).str.upper()
-    
-    # If a trace says DROPPED, EXITS_NETWORK, or NEIGHBOR_UNREACHABLE, it failed.
-    unreachable_routes = reach[traces_str.str.contains("DROP|DENY|NULL_ROUTED")]
-    loops = reach[traces_str.str.contains("LOOP")]
-    blackholes = reach[traces_str.str.contains("BLACKHOLE")]
+    traces = (
+        reach["Traces"]
+        .astype(str)
+        .str.upper()
+    )
 
-ospf_failures = []
+    unreachable_routes = reach[
+        traces.str.contains(
+            "DROP|DENY|NULL_ROUTED|NO_ROUTE"
+        )
+    ]
+
+    loops = reach[
+        traces.str.contains(
+            "LOOP"
+        )
+    ]
+    blackholes = reach[
+        traces.str.contains(
+            "BLACKHOLE"
+        )
+    ]
+
+# OSPF failures
+
 ospf_failures = pd.DataFrame()
 if "Session_Status" in ospf_neighbors.columns:
-    ospf_failures = ospf_neighbors[ospf_neighbors["Session_Status"] != "ESTABLISHED"]
+    ospf_failures = ospf_neighbors[
+        ospf_neighbors["Session_Status"]
+        !=
+        "ESTABLISHED"
+    ]
 
-static_routes = routes[routes.get("Protocol", "").astype(str).str.upper() == "STATIC"] if "Protocol" in routes.columns else pd.DataFrame()
+# Static routes only informational
+
+static_routes = pd.DataFrame()
+
+if "Protocol" in routes.columns:
+    static_routes = routes[
+        routes["Protocol"]
+        .astype(str)
+        .str.upper()
+        ==
+        "STATIC"
+    ]
+
+# Static failure detection
+# If static route exists but reachability fails
+
+static_failures = unreachable_routes
 
 # -----------------------------
-# 4. RISK MODEL SCORE CALCULATION
+# 4. RISK SCORE
 # -----------------------------
+
 risk_score = (
-    len(unreachable_routes) * 3 +
+    len(static_failures) * 3 +
     len(loops) * 5 +
     len(blackholes) * 4 +
-    len(ospf_failures) * 3 +
-    len(static_routes) * 1
+    len(ospf_failures) * 3
 )
 
-if risk_score <= 0:
+if risk_score == 0:
     risk_level = "GOOD"
 elif risk_score <= 6:
     risk_level = "MEDIUM"
@@ -124,57 +185,128 @@ else:
     risk_level = "HIGH"
 
 # -----------------------------
-# 5. FINAL REPORT
+# 5. REPORT
 # -----------------------------
+
 output = {
-    "unreachable_routes": len(unreachable_routes),
-    "loops": len(loops),
-    "blackholes": len(blackholes),
-    "ospf_failures": len(ospf_failures),
-    "static_routes": len(static_routes),
-    "risk_score": risk_score,
-    "risk_level": risk_level
+    "unreachable_routes":len(unreachable_routes),
+    "static_failures":len(static_failures),
+    "loops":len(loops),
+    "blackholes":len(blackholes),
+    "ospf_failures":len(ospf_failures),
+    "static_routes_detected":len(static_routes),
+    "risk_score":risk_score,
+    "risk_level":risk_level
 }
 
-print("\n===== NETWORK RISK REPORT =====")
-print(json.dumps(output, indent=2))
+print(
+    "\n===== NETWORK RISK REPORT ====="
+)
+print(
+    json.dumps(
+        output,
+        indent=2
+    )
+)
 
-print("\n--- Process Configuration ---")
-df = bf.q.ospfProcessConfiguration().answer().frame()
-if not df.empty:
-    print(df[["Node", "Areas"]])
-else:
-    print("No OSPF process configurations found.")
+# OSPF process
+
+print("\n--- OSPF Process ---")
+ospf_process = (
+    bf.q.ospfProcessConfiguration()
+    .answer()
+    .frame()
+)
+
+if not ospf_process.empty:
+
+    print(
+        ospf_process[
+            [
+                "Node",
+                "Areas"
+            ]
+        ]
+    )
 
 # -----------------------------
-# 6. EXPORT FOR ML DATASET
+# 6. EXPORT DATASET
 # -----------------------------
-# Ensure the export directories exist
 
-OUTPUT_DIR=os.environ.get("BATFISH_RESULTS_DIR", os.path.abspath(os.path.join(SCRIPT_DIR, "..", "..", "batfish_results")))
+OUTPUT_DIR = os.environ.get(
+    "BATFISH_RESULTS_DIR",
+    os.path.abspath(
+        os.path.join(
+            SCRIPT_DIR,
+            "..",
+            "..",
+            "batfish_results"
+        )
+    )
+)
 
-os.makedirs(f"{OUTPUT_DIR}/csv", exist_ok=True)
-os.makedirs(f"{OUTPUT_DIR}/json", exist_ok=True)
+os.makedirs(
+    f"{OUTPUT_DIR}/csv",
+    exist_ok=True
+)
 
-csv_path = f"{OUTPUT_DIR}/csv/network_risk_dataset_{tag}.csv"
-df_export = pd.DataFrame([output])
-df_export.to_csv(csv_path, index=False)
-print(f"\n💾 Saved CSV -> {csv_path}")
+os.makedirs(
+    f"{OUTPUT_DIR}/json",
+    exist_ok=True
+)
 
-#Append data to ml_dataset
-# Append to master ML dataset
-master_csv = f"{OUTPUT_DIR}/batfish_ml_dataset.csv"
+df_export = pd.DataFrame(
+    [output]
+)
+
+csv_path = (
+    f"{OUTPUT_DIR}/csv/"
+    f"network_risk_dataset_{tag}.csv"
+)
+
+df_export.to_csv(
+    csv_path,
+    index=False
+)
+
+print(
+    f"\n💾 Saved CSV -> {csv_path}"
+)
+
+master_csv = (
+    f"{OUTPUT_DIR}/batfish_ml_dataset.csv"
+)
 
 if os.path.exists(master_csv):
-    # Append without header
-    df_export.to_csv(master_csv, mode="a", header=False, index=False)
+    df_export.to_csv(
+        master_csv,
+        mode="a",
+        header=False,
+        index=False
+    )
+
 else:
-    # Create file with header
-    df_export.to_csv(master_csv, mode="w", header=True, index=False)
+    df_export.to_csv(
+        master_csv,
+        index=False
+    )
 
-print(f"📈 Appended data to -> {master_csv}")
+print(
+    f"📈 Updated dataset -> {master_csv}"
+)
 
-json_path = f"{OUTPUT_DIR}/json/risk_{tag}.json"
+json_path = (
+    f"{OUTPUT_DIR}/json/"
+    f"risk_{tag}.json"
+)
+
 with open(json_path, "w") as f:
-    json.dump(output, f, indent=2)
-print(f"💾 Saved JSON -> {json_path}")
+    json.dump(
+        output,
+        f,
+        indent=2
+    )
+
+print(
+    f"💾 Saved JSON -> {json_path}"
+)

@@ -73,11 +73,7 @@ try:
     reach_answer = bf.q.reachability(
         pathConstraints=PathConstraints(
             startLocation="h1",
-            endLocation="h3"
         ),
-        headers=HeaderConstraints(
-            dstIps="192.168.3.1"
-        )
     ).answer()
     reach = reach_answer.frame()
 

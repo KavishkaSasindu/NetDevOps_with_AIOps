@@ -94,7 +94,6 @@ ospf_neighbors = (
     .frame()
 )
 
-
 routes = (
     bf.q.routes()
     .answer()
@@ -194,7 +193,7 @@ output = {
     "loops":len(loops),
     "blackholes":len(blackholes),
     "ospf_failures":len(ospf_failures),
-    "static_routes_detected":len(static_routes),
+    "static_routes":len(static_failures),
     "risk_score":risk_score,
     "risk_level":risk_level
 }
@@ -210,7 +209,6 @@ print(
 )
 
 # OSPF process
-
 print("\n--- OSPF Process ---")
 ospf_process = (
     bf.q.ospfProcessConfiguration()
@@ -219,7 +217,6 @@ ospf_process = (
 )
 
 if not ospf_process.empty:
-
     print(
         ospf_process[
             [

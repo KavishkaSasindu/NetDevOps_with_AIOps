@@ -88,6 +88,50 @@ except Exception as e:
 print("\n--- OSPF Neighbors ---")
 print(ospf_neighbors if not ospf_neighbors.empty else "No OSPF Neighbors found.")
 
+# --------------------------------
+# EXPORT OSPF NEIGHBOR DATA ------
+# --------------------------------
+
+csv_dir = OUTPUT_DIR / "csv"
+json_dir = OUTPUT_DIR / "json"
+
+# Create directories safely
+csv_dir.mkdir(parents=True, exist_ok=True)
+json_dir.mkdir(parents=True, exist_ok=True)
+
+ospf_json_path = json_dir / f"ospf_neighbors_{TAG}.json"
+
+print("========== OSPF EXPORT ==========")
+print("Rows:", len(ospf_neighbors))
+print("Columns:", ospf_neighbors.columns.tolist())
+print("Output path:", ospf_json_path)
+
+if not ospf_neighbors.empty:
+
+    ospf_neighbors_export = ospf_neighbors.reset_index(drop=True)
+
+    # Convert all Batfish objects to JSON safe strings
+    ospf_neighbors_export = ospf_neighbors_export.astype(str)
+
+    with open(ospf_json_path, "w") as f:
+        json.dump(
+            ospf_neighbors_export.to_dict(orient="records"),
+            f,
+            indent=4
+        )
+
+    print(f"✅ Saved OSPF neighbors -> {ospf_json_path}")
+
+print("❌ No OSPF data available")
+
+
+print("JSON directory contents:")
+for f in json_dir.iterdir():
+    print(f)
+
+print("=======================================")
+
+
 # -----------------------------
 # 3. COMPUTE METRICS
 # -----------------------------
